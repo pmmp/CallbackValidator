@@ -3,6 +3,10 @@ Callback Validator
 
 Validates callback signatures against a prototype.
 
+This is a fork of [daverandom/callback-validator](https://github.com/DaveRandom/CallbackValidator) used by PocketMine-MP. There are no significant changes from the upstream repository apart from more test versions, updated dependencies, and tagged releases for packages to use.
+
+Since the upstream version has no release, it affects the composer stability of packages that use it. This caused problems for packages depending on [`pocketmine/pocketmine-mp`](https://github.com/pmmp/PocketMine-MP) because they could not receive its latest versions.
+
 ## Status
 
 [![Build Status](https://travis-ci.org/DaveRandom/CallbackValidator.svg?branch=master)](https://travis-ci.org/DaveRandom/CallbackValidator)
