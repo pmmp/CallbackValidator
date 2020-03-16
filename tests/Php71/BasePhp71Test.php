@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 abstract class BasePhp71Test extends TestCase
 {
-    public function setUp()
+    public function setUp(): void
     {
         if (PHP_VERSION_ID < 70100) {
             $this->markTestSkipped('PHP >= 7.1.0');
