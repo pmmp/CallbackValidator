@@ -1,7 +1,6 @@
 {
-  "name": "daverandom/callback-validator",
-  "description": "Tools for validating callback signatures",
-  "minimum-stability": "dev",
+  "name": "pocketmine/callback-validator",
+  "description": "Fork of daverandom/callback-validator - Tools for validating callback signatures",
   "license": "MIT",
   "authors": [
     {
