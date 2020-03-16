@@ -9,9 +9,7 @@ Since the upstream version has no release, it affects the composer stability of 
 
 ## Status
 
-[![Build Status](https://travis-ci.org/DaveRandom/CallbackValidator.svg?branch=master)](https://travis-ci.org/DaveRandom/CallbackValidator)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/DaveRandom/CallbackValidator/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/DaveRandom/CallbackValidator/?branch=master)
-[![Code Coverage](https://scrutinizer-ci.com/g/DaveRandom/CallbackValidator/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/DaveRandom/CallbackValidator/?branch=master)
+[![Build Status](https://travis-ci.com/pmmp/CallbackValidator.svg?branch=master)](https://travis-ci.com/pmmp/CallbackValidator)
 
 ## Usage
 
