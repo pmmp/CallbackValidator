@@ -16,3 +16,7 @@ before_script:
 script:
   - phpdbg -qrr vendor/bin/phpunit --coverage-text --coverage-clover=coverage.clover
 
+cache:
+  directories:
+    - $HOME/.composer/cache/files
+    - $HOME/.composer/cache/vcs
