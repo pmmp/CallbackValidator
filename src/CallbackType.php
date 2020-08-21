@@ -159,10 +159,12 @@ final class CallbackType
 
         $string .= '( ';
 
-        for ($i = $o = 0, $l = count($this->parameters) - 1; $i < $l; $i++) {
+        $i = $o = 0;
+        $l = count($this->parameters) - 1;
+        for (; $i < $l; $i++) {
             $string .= $this->parameters[$i];
 
-            if (!$o && !($this->parameters[$i + 1]->isOptional)) {
+            if ($o === 0 && !($this->parameters[$i + 1]->isOptional)) {
                 $string .= ', ';
                 continue;
             }
@@ -175,7 +177,7 @@ final class CallbackType
             $string .= $this->parameters[$i] . ' ';
         }
 
-        if ($o) {
+        if ($o !== 0) {
             $string .= str_repeat(']', $o) . ' ';
         }
 
