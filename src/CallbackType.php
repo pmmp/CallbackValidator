@@ -38,13 +38,13 @@ final class CallbackType
             return new \ReflectionMethod($target, '__invoke');
         }
 
-	if (\is_string($target)) {
-		return \strpos($target, '::') !== false
-		    ? new \ReflectionMethod($target)
-		    : new \ReflectionFunction($target);
-	}
+        if (\is_string($target)) {
+            return \strpos($target, '::') !== false
+                ? new \ReflectionMethod($target)
+                : new \ReflectionFunction($target);
+        }
 
-	throw new \UnexpectedValueException("Unknown callable type");
+        throw new \UnexpectedValueException("Unknown callable type");
     }
 
     /**
