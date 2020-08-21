@@ -72,12 +72,14 @@ final class ParameterType extends Type
         $typeName = null;
         $typeReflection = $reflection->getType();
 
-        if ($typeReflection !== null) {
-            $typeName = (string)$typeReflection;
+        if ($typeReflection instanceof \ReflectionNamedType) {
+            $typeName = $typeReflection->getName();
 
             if ($typeReflection->allowsNull()) {
                 $flags |= self::NULLABLE;
             }
+        } elseif ($typeReflection !== null) {
+            throw new \LogicException("Unsupported reflection type " . get_class($typeReflection));
         }
 
         return new self($parameterName, $typeName, $flags);

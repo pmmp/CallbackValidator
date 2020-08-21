@@ -93,9 +93,11 @@ final class CallbackType
         $byRef = $candidate->returnsReference();
         $returnType = $candidate->getReturnType();
 
-        if ($returnType !== null) {
-            $typeName = (string)$returnType;
+        if ($returnType instanceof \ReflectionNamedType) {
+            $typeName = $returnType->getName();
             $nullable = $returnType->allowsNull();
+        } elseif ($returnType !== null) {
+            throw new \LogicException("Unsupported reflection type " . get_class($returnType));
         } else {
             $typeName = null;
             $nullable = false;
@@ -110,9 +112,11 @@ final class CallbackType
         foreach ($candidate->getParameters() as $position => $parameter) {
             $byRef = $parameter->isPassedByReference();
 
-            if (($type = $parameter->getType()) !== null) {
-                $typeName = (string)$type;
+            if (($type = $parameter->getType()) instanceof \ReflectionNamedType) {
+                $typeName = $type->getName();
                 $nullable = $type->allowsNull();
+            } elseif ($type !== null) {
+                throw new \LogicException("Unsupported reflection type " . get_class($type));
             } else {
                 $typeName = null;
                 $nullable = false;
