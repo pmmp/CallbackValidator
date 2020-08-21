@@ -42,7 +42,7 @@ final class ParameterType extends Type
     /**
      * Whether the parameter value can be omitted at call time#
      *
-     * @var
+     * @var bool
      */
     public $isOptional;
 
@@ -92,7 +92,7 @@ final class ParameterType extends Type
     {
         $flags = (int)$flags;
 
-        parent::__construct($typeName, $flags, $flags & self::COVARIANT, $flags & self::CONTRAVARIANT);
+        parent::__construct($typeName, $flags, ($flags & self::COVARIANT) !== 0, ($flags & self::CONTRAVARIANT) !== 0);
 
         $this->parameterName = (string)$parameterName;
         $this->isOptional = (bool)($flags & self::OPTIONAL);

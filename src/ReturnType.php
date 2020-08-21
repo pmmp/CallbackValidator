@@ -48,7 +48,7 @@ final class ReturnType extends Type
     {
         $flags = (int)$flags;
 
-        parent::__construct($typeName, $flags, $flags & self::COVARIANT, $flags & self::CONTRAVARIANT);
+        parent::__construct($typeName, $flags, ($flags & self::COVARIANT) !== 0, ($flags & self::CONTRAVARIANT) !== 0);
     }
 
     /**

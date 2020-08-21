@@ -38,11 +38,13 @@ final class CallbackType
             return new \ReflectionMethod($target, '__invoke');
         }
 
-        $target = (string)$target;
+	if (\is_string($target)) {
+		return \strpos($target, '::') !== false
+		    ? new \ReflectionMethod($target)
+		    : new \ReflectionFunction($target);
+	}
 
-        return \strpos($target, '::') !== false
-            ? new \ReflectionMethod($target)
-            : new \ReflectionFunction($target);
+	throw new \UnexpectedValueException("Unknown callable type");
     }
 
     /**
@@ -108,8 +110,7 @@ final class CallbackType
         foreach ($candidate->getParameters() as $position => $parameter) {
             $byRef = $parameter->isPassedByReference();
 
-            if ($parameter->hasType()) {
-                $type = $parameter->getType();
+            if (($type = $parameter->getType()) !== null) {
                 $typeName = (string)$type;
                 $nullable = $type->allowsNull();
             } else {
