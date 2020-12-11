@@ -9,7 +9,7 @@ Since the upstream version has no release, it affects the composer stability of 
 
 ## Status
 
-[![Build Status](https://travis-ci.com/pmmp/CallbackValidator.svg?branch=master)](https://travis-ci.com/pmmp/CallbackValidator)
+![CI](https://github.com/pmmp/CallbackValidator/workflows/CI/badge.svg)
 
 ## Usage
 
