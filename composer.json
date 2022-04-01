@@ -30,5 +30,10 @@
     "psr-4": {
       "DaveRandom\\CallbackValidator\\Test\\": "tests/"
     }
+  },
+  "config": {
+    "allow-plugins": {
+      "phpstan/extension-installer": true
+    }
   }
 }
