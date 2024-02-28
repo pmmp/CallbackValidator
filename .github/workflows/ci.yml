@@ -28,4 +28,4 @@ jobs:
     - name: Run PHPStan
       run: ./vendor/bin/phpstan analyze --no-progress
     - name: Run PHPUnit
-      run: phpdbg -qrr vendor/bin/phpunit --coverage-text --coverage-clover=coverage.clover
+      run: vendor/bin/phpunit
