@@ -77,7 +77,7 @@ class CallbackTypeTest extends TestCase{
 		yield [function(int $a) : void{}, function(mixed $a) : void{}, true, "mixed is contravariant with int"];
 		yield [function(int|string $a) : void{}, function(mixed $a) : void{}, true, "mixed is contravariant with int|string"];
 		yield [function(Interface1&Interface2 $a) : void{}, function(mixed $a) : void{}, true, "mixed is contravariant with intersection"];
-		yield [function((Interface1&Interface2)|string $a) : void{}, function(mixed $a) : void{}, false, "mixed is contravariant with DNF type"];
+		yield [function((Interface1&Interface2)|string $a) : void{}, function(mixed $a) : void{}, true, "mixed is contravariant with DNF type"];
 
 		yield [function(mixed $a) : void{}, function($a) : void{}, true, "unspecified parameter type is equivalent to mixed"];
 
