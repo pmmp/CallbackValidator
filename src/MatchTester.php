@@ -1,124 +1,126 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 
 namespace DaveRandom\CallbackValidator;
 
-final class MatchTester
-{
-    /**
-     * Thou shalt not instantiate
-     */
-    private function __construct() { }
+use DaveRandom\CallbackValidator\Type\BaseType;
+use DaveRandom\CallbackValidator\Type\BuiltInType;
+use DaveRandom\CallbackValidator\Type\IntersectionType;
+use DaveRandom\CallbackValidator\Type\NamedType;
+use DaveRandom\CallbackValidator\Type\UnionType;
 
-    /**
-     * Lookup table of all built-in types
-     * @var true[]
-     */
-    private static $builtInTypes = [
-        BuiltInTypes::STRING   => true,
-        BuiltInTypes::INT      => true,
-        BuiltInTypes::FLOAT    => true,
-        BuiltInTypes::BOOL     => true,
-        BuiltInTypes::ARRAY    => true,
-        BuiltInTypes::CALLABLE => true,
-        BuiltInTypes::VOID     => true,
-        BuiltInTypes::ITERABLE => true,
-    ];
+final class MatchTester{
+	/**
+	 * Thou shalt not instantiate
+	 */
+	private function __construct(){}
 
-    /**
-     * Lookup table of scalar types
-     * @var true[]
-     */
-    private static $scalarTypes = [
-        BuiltInTypes::STRING => true,
-        BuiltInTypes::INT    => true,
-        BuiltInTypes::FLOAT  => true,
-        BuiltInTypes::BOOL   => true,
-    ];
+	public static function isCovariant(?BaseType $acceptingType, ?BaseType $givenType) : bool{
+		// If the super type is unspecified, anything is a match
+		if($acceptingType === null || ($acceptingType instanceof NamedType && $acceptingType->type === BuiltInType::VOID)){
+			return true;
+		}
 
-    /**
-     * @param string $superTypeName
-     * @param string $subTypeName
-     * @return bool
-     */
-    public static function isWeakScalarMatch($superTypeName, $subTypeName)
-    {
-        // Nothing else satisfies array, callable, void or iterable
-        if (!isset(self::$scalarTypes[$superTypeName])) {
-            return false;
-        }
+		// If the sub type is unspecified, nothing is a match
+		if($givenType === null){
+			return false;
+		}
 
-        // Scalars can all cast to each other
-        if (isset(self::$scalarTypes[$subTypeName])) {
-            return true;
-        }
+		//composite type acceptance:
+		//super named type -> named, union (all parts must be accepted by super), intersection (at least 1 part must be accepted by super)
+		//super union -> named (must be accepted by at least 1 super), union (all parts must be accepted by at least 1 super), intersection (at least 1 part must be accepted by at least 1 super?)
+		//super intersection -> named (must be accepted by all supers), union (all parts must be accepted by all supers), intersection (all parts must be accepted by all supers)
 
-        // Classes with __toString() satisfy string
-        if ($superTypeName === BuiltInTypes::STRING && \method_exists($subTypeName, '__toString')) {
-            return true;
-        }
+		//given union is handled the same no matter what the accepting type is
+		//ensure all parts are covariant with the accepting type
+		if($givenType instanceof UnionType){
+			foreach($givenType->types as $type){
+				if(!self::isCovariant($acceptingType, $type)){
+					return false;
+				}
+			}
 
-        return false;
-    }
+			return true;
+		}
 
-    /**
-     * @param string|null $superTypeName
-     * @param bool $superTypeNullable
-     * @param string|null $subTypeName
-     * @param bool $subTypeNullable
-     * @param bool $weak
-     * @return bool
-     */
-    public static function isMatch($superTypeName, $superTypeNullable, $subTypeName, $subTypeNullable, $weak)
-    {
-        // If the super type is unspecified, anything is a match
-        if ($superTypeName === null) {
-            return true;
-        }
+		if($acceptingType instanceof NamedType){
+			//at least 1 part of a given intersection must be covariant with the accepting type
+			//given intersection can only be compared with a named type to validate variance - the parts cannot
+			//be individually tested against a composite type
+			if($givenType instanceof IntersectionType){
+				foreach($givenType->types as $type){
+					if(self::isCovariant($acceptingType, $type)){
+						return true;
+					}
+				}
 
-        // If the sub type is unspecified, nothing is a match
-        if ($subTypeName === null) {
-            return false;
-        }
+				return false;
+			}
 
-        $superTypeName = (string)$superTypeName;
-        $subTypeName = (string)$subTypeName;
+			if($givenType instanceof NamedType){
+				$acceptingTypeName = $acceptingType->type;
+				$givenTypeName = $givenType->type;
+				if($acceptingTypeName === $givenTypeName){
+					// Exact match
+					return true;
+				}
 
-        // Sub type cannot be nullable unless the super type is as well
-        if ($subTypeNullable && !$superTypeNullable) {
-            // nullable void doesn't really make sense but for completeness...
-            return $superTypeName === BuiltInTypes::VOID && $subTypeName === BuiltInTypes::VOID;
-        }
+				if($acceptingTypeName === BuiltInType::MIXED && $givenTypeName !== BuiltInType::VOID){
+					//anything is covariant with mixed except void
+					return true;
+				}
 
-        // If the string is an exact match it's definitely acceptable
-        if ($superTypeName === $subTypeName) {
-            return true;
-        }
+				if($acceptingTypeName === BuiltInType::FLOAT && $givenTypeName === BuiltInType::INT){
+					//int is covariant with float even in strict mode
+					return true;
+				}
 
-        // Check iterable
-        if ($superTypeName === BuiltInTypes::ITERABLE) {
-            return $subTypeName === BuiltInTypes::ARRAY
-                || $subTypeName === \Traversable::class
-                || \is_subclass_of($subTypeName, \Traversable::class);
-        }
+				// Check iterable
+				if($acceptingTypeName === BuiltInType::ITERABLE){
+					return $givenTypeName === BuiltInType::ARRAY
+						|| $givenTypeName === \Traversable::class
+						|| \is_subclass_of($givenTypeName, \Traversable::class);
+				}
 
-        // Check callable
-        if ($superTypeName === BuiltInTypes::CALLABLE) {
-            return $subTypeName === \Closure::class
-                || \method_exists($subTypeName, '__invoke')
-                || \is_subclass_of($subTypeName, \Closure::class);
-        }
+				// Check callable
+				if($acceptingTypeName === BuiltInType::CALLABLE){
+					return $givenTypeName === \Closure::class
+						|| \method_exists($givenTypeName, '__invoke')
+						|| \is_subclass_of($givenTypeName, \Closure::class);
+				}
 
-        // If the super type is built-in, check whether casting rules can succeed
-        if (isset(self::$builtInTypes[$superTypeName])) {
-            // Fail immediately in strict mode
-            return $weak && self::isWeakScalarMatch($superTypeName, $subTypeName);
-        }
+				if($acceptingTypeName === BuiltInType::OBJECT){
+					//a class type is covariant with object
+					return !$givenTypeName instanceof BuiltInType;
+				}
 
-        // We now know the super type is not built-in and there's no string match, sub type must not be built-in
-        if (isset(self::$builtInTypes[$subTypeName])) {
-            return false;
-        }
+				return is_string($givenTypeName) && is_string($acceptingTypeName) && \is_subclass_of($givenTypeName, $acceptingTypeName);
+			}
 
-        return \is_subclass_of($subTypeName, $superTypeName);
-    }
+			throw new \AssertionError("Unhandled reflection type " . get_class($givenType));
+		}
+
+		if($acceptingType instanceof UnionType){
+			//accepting union - the given type must be covariant with at least 1 part
+			foreach($acceptingType->types as $type){
+				if(self::isCovariant($type, $givenType)){
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		if($acceptingType instanceof IntersectionType){
+			//accepting intersection - the given type must be covariant with all parts
+			foreach($acceptingType->types as $type){
+				if(!self::isCovariant($type, $givenType)){
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		return false;
+	}
 }
