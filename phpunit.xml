@@ -2,7 +2,8 @@
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd" colors="true" bootstrap="vendor/autoload.php" cacheDirectory=".phpunit.cache">
   <testsuites>
     <testsuite name="CallbackValidator Test Suite">
-      <directory>./tests</directory>
+      <directory>./tests/Base</directory>
+      <directory phpVersion="8.2.0" phpVersionOperator=">=">./tests/Php82</directory>
     </testsuite>
   </testsuites>
   <source>
