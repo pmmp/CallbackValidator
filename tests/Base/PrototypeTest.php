@@ -2,13 +2,13 @@
 
 namespace DaveRandom\CallbackValidator\Test\Base;
 
-use DaveRandom\CallbackValidator\CallbackType;
+use DaveRandom\CallbackValidator\Prototype;
 use DaveRandom\CallbackValidator\Test\Base\Fixtures\Interface1;
 use DaveRandom\CallbackValidator\Test\Base\Fixtures\Interface2;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-class CallbackTypeTest extends TestCase{
+class PrototypeTest extends TestCase{
 
 	public static function returnCovarianceProvider() : \Generator{
 		//anything is covariant with void in a return type, at least for the purposes of callbacks
@@ -81,10 +81,10 @@ class CallbackTypeTest extends TestCase{
 	#[DataProvider('returnCovarianceProvider')]
 	#[DataProvider('paramContravarianceProvider')]
 	public function testCompatibility(\Closure $required, \Closure $given, bool $matches, string $reason) : void{
-		$required = CallbackType::createFromCallable($required);
+		$required = Prototype::createFromCallable($required);
 
 		$serializedRequire = (string) $required;
-		$serializedGiven = (string) CallbackType::createFromCallable($given);
+		$serializedGiven = (string) Prototype::createFromCallable($given);
 		self::assertSame($required->isSatisfiedBy($given), $matches, $reason . " ($serializedRequire, $serializedGiven)");
 	}
 }

@@ -10,7 +10,7 @@ use DaveRandom\CallbackValidator\Type\UnionType;
 use function array_map;
 use function get_class;
 
-final class CallbackType{
+final class Prototype{
 	private ReturnInfo $returnInfo;
 
 	/** @var ParameterInfo[] */
@@ -46,7 +46,7 @@ final class CallbackType{
 		return $type === null ? null : self::convertReflectionTypeInner($type);
 	}
 
-	public static function createFromCallable(\Closure $callable) : CallbackType{
+	public static function createFromCallable(\Closure $callable) : Prototype{
 		$reflection = new \ReflectionFunction($callable);
 
 		$returnType = new ReturnInfo(self::convertReflectionType($reflection->getReturnType()), $reflection->returnsReference());
@@ -63,7 +63,7 @@ final class CallbackType{
 			);
 		}
 
-		return new CallbackType($returnType, ...$parameters);
+		return new Prototype($returnType, ...$parameters);
 	}
 
 	public function __construct(ReturnInfo $returnType, ParameterInfo ...$parameters){
