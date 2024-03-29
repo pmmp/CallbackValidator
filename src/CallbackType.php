@@ -19,39 +19,6 @@ final class CallbackType{
 	private int $requiredParameterCount;
 
 	/**
-	 * Given a callable, create the appropriate reflection
-	 *
-	 * This will accept things the PHP would fail to invoke due to scoping, but we can reflect them anyway. Do not add
-	 * a callable type-hint or this behaviour will break!
-	 *
-	 * @param callable $target
-	 *
-	 * @return \ReflectionFunction|\ReflectionMethod
-	 * @throws \ReflectionException
-	 */
-	private static function reflectCallable($target){
-		if($target instanceof \Closure){
-			return new \ReflectionFunction($target);
-		}
-
-		if(\is_array($target) && isset($target[0], $target[1])){
-			return new \ReflectionMethod($target[0], $target[1]);
-		}
-
-		if(\is_object($target) && \method_exists($target, '__invoke')){
-			return new \ReflectionMethod($target, '__invoke');
-		}
-
-		if(\is_string($target)){
-			return \strpos($target, '::') !== false
-				? new \ReflectionMethod($target)
-				: new \ReflectionFunction($target);
-		}
-
-		throw new \UnexpectedValueException("Unknown callable type");
-	}
-
-	/**
 	 * @param \ReflectionType[] $types
 	 *
 	 * @return BaseType[]
@@ -79,17 +46,8 @@ final class CallbackType{
 		return $type === null ? null : self::convertReflectionTypeInner($type);
 	}
 
-	/**
-	 * @param callable $callable
-	 *
-	 * @throws InvalidCallbackException
-	 */
-	public static function createFromCallable($callable) : CallbackType{
-		try{
-			$reflection = self::reflectCallable($callable);
-		}catch(\ReflectionException $e){
-			throw new InvalidCallbackException('Failed to reflect the supplied callable', 0, $e);
-		}
+	public static function createFromCallable(\Closure $callable) : CallbackType{
+		$reflection = new \ReflectionFunction($callable);
 
 		$returnType = new ReturnInfo(self::convertReflectionType($reflection->getReturnType()), $reflection->returnsReference());
 
@@ -119,11 +77,7 @@ final class CallbackType{
 		}
 	}
 
-	/**
-	 * @param callable $callable
-	 * @throws InvalidCallbackException
-	 */
-	public function isSatisfiedBy($callable) : bool{
+	public function isSatisfiedBy(\Closure $callable) : bool{
 		$other = self::createFromCallable($callable);
 
 		if(!$this->returnInfo->isSatisfiedBy($other->returnInfo)){
