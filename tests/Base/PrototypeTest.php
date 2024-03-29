@@ -66,6 +66,8 @@ class PrototypeTest extends TestCase{
 		//null is handled in a weird way by PHP, so we need to cover the edge cases
 		yield [function(int|null $a) : void{}, function(int $a) : void{}, false, "given function does not accept null"];
 		yield [function(int $a) : void{}, function(int|null $a) : void{}, true, "given function accepts null, which is not required by the signature"];
+		yield [function(int|null $a) : void{}, function(int|string|null $a) : void{}, true, "given function accepts string in addition to required types"];
+		yield [function(int|string|null $a) : void{}, function(int|null $a) : void{}, false, "given function doesn't accept string"];
 
 		yield [function(int $a) : void{}, function(mixed $a) : void{}, true, "mixed is contravariant with int"];
 		yield [function(int|string $a) : void{}, function(mixed $a) : void{}, true, "mixed is contravariant with int|string"];
@@ -81,10 +83,8 @@ class PrototypeTest extends TestCase{
 	#[DataProvider('returnCovarianceProvider')]
 	#[DataProvider('paramContravarianceProvider')]
 	public function testCompatibility(\Closure $required, \Closure $given, bool $matches, string $reason) : void{
-		$required = Prototype::createFromCallable($required);
-
-		$serializedRequire = (string) $required;
-		$serializedGiven = (string) Prototype::createFromCallable($given);
-		self::assertSame($required->isSatisfiedBy($given), $matches, $reason . " ($serializedRequire, $serializedGiven)");
+		$serializedRequire = Prototype::print($required);
+		$serializedGiven = Prototype::print($given);
+		self::assertSame(Prototype::isSatisfiedBy($required, $given), $matches, $reason . " ($serializedRequire, $serializedGiven)");
 	}
 }

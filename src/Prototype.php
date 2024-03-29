@@ -2,112 +2,62 @@
 
 namespace DaveRandom\CallbackValidator;
 
-use DaveRandom\CallbackValidator\Type\BaseType;
-use DaveRandom\CallbackValidator\Type\BuiltInType;
-use DaveRandom\CallbackValidator\Type\IntersectionType;
-use DaveRandom\CallbackValidator\Type\NamedType;
-use DaveRandom\CallbackValidator\Type\UnionType;
 use function array_map;
 use function get_class;
 
 final class Prototype{
-	private ReturnInfo $returnInfo;
-
-	/** @var ParameterInfo[] */
-	private array $parameters;
-
-	private int $requiredParameterCount;
-
-	/**
-	 * @param \ReflectionType[] $types
-	 *
-	 * @return BaseType[]
-	 */
-	private static function convertReflectionTypeArray(array $types) : array{
-		return array_map(fn(\ReflectionType $innerType) => self::convertReflectionTypeInner($innerType), $types);
+	private function __construct(){
+		//NOOP
 	}
 
-	private static function convertReflectionTypeInner(\ReflectionType $type) : BaseType{
-		return match (true) {
-			$type instanceof \ReflectionNamedType =>
-				//simple nullable types are still represented by named types despite technically being unions of Type|null
-				//convert these to unions so MatchTester can handle them properly
-				//mixed types are considered nullable by the reflection API
-				$type->allowsNull() && $type->getName() !== BuiltInType::MIXED->value ?
-					new UnionType([new NamedType($type->getName()), new NamedType(BuiltInType::NULL)]) :
-					new NamedType($type->getName()),
-			$type instanceof \ReflectionUnionType => new UnionType(self::convertReflectionTypeArray($type->getTypes())),
-			$type instanceof \ReflectionIntersectionType => new IntersectionType(self::convertReflectionTypeArray($type->getTypes())),
-			default => throw new \AssertionError("Unhandled reflection type " . get_class($type))
-		};
+	private static function parameterSatisfiedBy(\ReflectionParameter $prototype, \ReflectionParameter $given) : bool{
+		return
+			//TODO: we should probably check the name as well
+			$prototype->isPassedByReference() === $given->isPassedByReference() &&
+			//contravariance can be tested as covariance by swapping the types
+			!MatchTester::isCovariant($given->getType(), $prototype->getType());
 	}
 
-	private static function convertReflectionType(?\ReflectionType $type) : ?BaseType{
-		return $type === null ? null : self::convertReflectionTypeInner($type);
-	}
+	public static function isSatisfiedBy(\Closure $prototype, \Closure $callable) : bool{
+		$prototypeReflect = new \ReflectionFunction($prototype);
+		$callableReflect = new \ReflectionFunction($callable);
 
-	public static function createFromCallable(\Closure $callable) : Prototype{
-		$reflection = new \ReflectionFunction($callable);
-
-		$returnType = new ReturnInfo(self::convertReflectionType($reflection->getReturnType()), $reflection->returnsReference());
-
-		$parameters = [];
-
-		foreach($reflection->getParameters() as $parameterReflection){
-			$parameters[] = new ParameterInfo(
-				$parameterReflection->getName(),
-				self::convertReflectionType($parameterReflection->getType()),
-				$parameterReflection->isPassedByReference(),
-				$parameterReflection->isOptional(),
-				$parameterReflection->isVariadic()
-			);
-		}
-
-		return new Prototype($returnType, ...$parameters);
-	}
-
-	public function __construct(ReturnInfo $returnType, ParameterInfo ...$parameters){
-		$this->returnInfo = $returnType;
-		$this->parameters = $parameters;
-		$this->requiredParameterCount = 0;
-		foreach($parameters as $parameter){
-			if(!$parameter->isOptional && !$parameter->isVariadic){
-				$this->requiredParameterCount++;
-			}
-		}
-	}
-
-	public function isSatisfiedBy(\Closure $callable) : bool{
-		$other = self::createFromCallable($callable);
-
-		if(!$this->returnInfo->isSatisfiedBy($other->returnInfo)){
+		if($callableReflect->getNumberOfRequiredParameters() > $prototypeReflect->getNumberOfRequiredParameters()){
 			return false;
 		}
 
-		if($other->requiredParameterCount > $this->requiredParameterCount){
+		$prototypeReturn = $prototypeReflect->getReturnType();
+		$callableReturn = $callableReflect->getReturnType();
+
+		if(
+			$callableReflect->returnsReference() !== $prototypeReflect->returnsReference() ||
+			!MatchTester::isCovariant($prototypeReturn, $callableReturn)
+		){
 			return false;
 		}
 
 		$last = null;
 
-		foreach($other->parameters as $position => $parameter){
+		$prototypeParameters = $prototypeReflect->getParameters();
+		foreach($callableReflect->getParameters() as $position => $callableParameter){
 			// Parameters that exist in the prototype must always be satisfied directly
-			if(isset($this->parameters[$position])){
-				if(!$this->parameters[$position]->isSatisfiedBy($parameter)){
+			if(isset($prototypeParameters[$position])){
+				$prototypeParameter = $prototypeParameters[$position];
+				if(self::parameterSatisfiedBy($prototypeParameter, $callableParameter)){
 					return false;
 				}
 
-				$last = $this->parameters[$position];
+				$last = $prototypeParameter;
 				continue;
 			}
 
 			// Candidates can accept additional args that are not in the prototype as long as they are not mandatory
-			if(!$parameter->isOptional && !$parameter->isVariadic){
+			if(!$callableParameter->isOptional() && !$callableParameter->isVariadic()){
 				return false;
 			}
 
 			// If the last arg of the prototype is variadic, any additional args the candidate accepts must satisfy it
-			if($last !== null && $last->isVariadic && !$last->isSatisfiedBy($parameter)){
+			if($last !== null && $last->isVariadic() && !self::parameterSatisfiedBy($last, $callableParameter)){
 				return false;
 			}
 		}
@@ -115,24 +65,38 @@ final class Prototype{
 		return true;
 	}
 
-	/**
-	 * @return string
-	 */
-	public function __toString() : string{
+	public static function print(\Closure $closure) : string{
+		$reflect = new \ReflectionFunction($closure);
 		$string = 'function ';
 
-		if($this->returnInfo->byReference){
+		if($reflect->returnsReference()){
 			$string .= '& ';
 		}
 
 		$string .= '( ';
 
 		$i = $o = 0;
-		$l = count($this->parameters) - 1;
+		$parameters = $reflect->getParameters();
+		$l = count($parameters) - 1;
 		for(; $i < $l; $i++){
-			$string .= $this->parameters[$i];
+			$parameter = $parameters[$i];
+			$parameterType = $parameter->getType();
 
-			if($o === 0 && !($this->parameters[$i + 1]->isOptional)){
+			if($parameterType !== null){
+				$string .= self::printType($parameterType) . ' ';
+			}
+
+			if($parameter->isPassedByReference()){
+				$string .= '&';
+			}
+
+			if($parameter->isVariadic()){
+				$string .= '...';
+			}
+
+			$string .= '$' . $parameter->getName();
+
+			if($o === 0 && !($parameters[$i + 1]->isOptional())){
 				$string .= ', ';
 				continue;
 			}
@@ -141,8 +105,8 @@ final class Prototype{
 			$o++;
 		}
 
-		if(isset($this->parameters[$l])){
-			$string .= $this->parameters[$i] . ' ';
+		if(isset($parameters[$l])){
+			$string .= $parameters[$i] . ' ';
 		}
 
 		if($o !== 0){
@@ -151,10 +115,32 @@ final class Prototype{
 
 		$string .= ')';
 
-		if($this->returnInfo->type !== null){
-			$string .= ' : ' . $this->returnInfo->type->stringify();
+		$returnType = $reflect->getReturnType();
+		if($returnType !== null){
+			$string .= ' : ' . self::printType($returnType);
 		}
 
 		return $string;
+	}
+
+	/**
+	 * @param \ReflectionType[] $types
+	 */
+	private static function printTypes(string $symbol, array $types) : string{
+		return implode($symbol, array_map(fn(\ReflectionType $type) => self::printType($type), $types));
+	}
+
+	private static function printType(\ReflectionType $type) : string{
+		if($type instanceof \ReflectionNamedType){
+			return $type->getName();
+		}
+		if($type instanceof \ReflectionUnionType){
+			return self::printTypes('|', $type->getTypes());
+		}
+		if($type instanceof \ReflectionIntersectionType){
+			return self::printTypes('&', $type->getTypes());
+		}
+
+		throw new \AssertionError("Unhandled reflection type " . get_class($type));
 	}
 }
