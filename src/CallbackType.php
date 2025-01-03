@@ -2,6 +2,9 @@
 
 namespace DaveRandom\CallbackValidator;
 
+use function is_object;
+use function is_string;
+
 final class CallbackType
 {
     /**
@@ -30,7 +33,12 @@ final class CallbackType
             return new \ReflectionFunction($target);
         }
 
-        if (\is_array($target) && isset($target[0], $target[1])) {
+        if (
+            \is_array($target) &&
+            isset($target[0], $target[1]) &&
+            (is_object($target[0]) || is_string($target[0])) &&
+            is_string($target[1])
+        ) {
             return new \ReflectionMethod($target[0], $target[1]);
         }
 
