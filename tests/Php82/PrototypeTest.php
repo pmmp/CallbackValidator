@@ -27,8 +27,10 @@ class PrototypeTest extends TestCase{
 	#[DataProvider('returnCovarianceProvider')]
 	#[DataProvider('paramContravarianceProvider')]
 	public function testCompatibility(\Closure $required, \Closure $given, bool $matches, string $reason) : void{
-		$serializedRequire = Prototype::print($required);
-		$serializedGiven = Prototype::print($given);
-		self::assertSame(Prototype::isSatisfiedBy($required, $given), $matches, $reason . " ($serializedRequire, $serializedGiven)");
+		$required = Prototype::createFromCallable($required);
+
+		$serializedRequire = (string) $required;
+		$serializedGiven = (string) Prototype::createFromCallable($given);
+		self::assertSame($required->isSatisfiedBy($given), $matches, $reason . " ($serializedRequire, $serializedGiven)");
 	}
 }
