@@ -2,7 +2,7 @@
 
 namespace DaveRandom\CallbackValidator;
 
-use DaveRandom\CallbackValidator\BuiltInType;
+use DaveRandom\CallbackValidator\Type\BuiltInType;
 
 final class MatchTester{
 	/**
