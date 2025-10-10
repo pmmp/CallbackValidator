@@ -4,5 +4,7 @@ namespace DaveRandom\CallbackValidator\Test\Base\Fixtures;
 
 class ClassImplementingInvoke
 {
-    public function __invoke() {}
+    public function __invoke() : mixed{
+		return null;
+	}
 }

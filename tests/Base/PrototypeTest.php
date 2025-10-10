@@ -16,20 +16,20 @@ class PrototypeTest extends TestCase{
 		yield [function() : void{}, function() : void{}, true, "same type"];
 		yield [function(){}, function() : void{}, true, "unspecified type allows not returning anything (the same as void)"];
 
-		yield [function() : int{ return 0; }, function(){}, false, "given function might return nothing, which is not allowed by an int type"];
-		yield [function() : mixed{ return 0; }, function(){}, false, "given function might return nothing, which is not allowed by a mixed type"];
+		yield [function() : int{ die(); }, function(){}, false, "given function might return nothing, which is not allowed by an int type"];
+		yield [function() : mixed{ die(); }, function(){}, false, "given function might return nothing, which is not allowed by a mixed type"];
 
-		yield [function() : int|string{ return 0; }, function() : int{ return 0; }, true, "given function returns a type which is covariant with required"];
-		yield [function() : int{ return 0; }, function() : int|string{ return 0; }, false, "given function returns a type which is not covariant with required"];
-		yield [function() : float{ return 0; }, function() : int{ return 0; }, true, "int is covariant with float"];
+		yield [function() : int|string{ die(); }, function() : int{ die(); }, true, "given function returns a type which is covariant with required"];
+		yield [function() : int{ die(); }, function() : int|string{ die(); }, false, "given function returns a type which is not covariant with required"];
+		yield [function() : float{ die(); }, function() : int{ die(); }, true, "int is covariant with float"];
 
-		yield [function() : Interface1{}, function() : Interface1&Interface2{}, true, "covariant intersection type"];
-		yield [function() : Interface1&Interface2{}, function() : Interface1{}, false, "given type not covariant with required intersection"];
+		yield [function() : Interface1{ die(); }, function() : Interface1&Interface2{ die(); }, true, "covariant intersection type"];
+		yield [function() : Interface1&Interface2{ die(); }, function() : Interface1{ die(); }, false, "given type not covariant with required intersection"];
 
-		yield [function() : mixed{}, function() : int{}, true, "int is covariant with mixed"];
-		yield [function() : mixed{}, function() : int|string{}, true, "int|string is covariant with mixed"];
-		yield [function() : mixed{}, function() : Interface1&Interface2{}, true, "intersection is covariant with mixed"];
-		yield [function() : mixed{}, function() : void{}, false, "void is not covariant with mixed"];
+		yield [function() : mixed{ die(); }, function() : int{ die(); }, true, "int is covariant with mixed"];
+		yield [function() : mixed{ die(); }, function() : int|string{ die(); }, true, "int|string is covariant with mixed"];
+		yield [function() : mixed{ die(); }, function() : Interface1&Interface2{ die(); }, true, "intersection is covariant with mixed"];
+		yield [function() : mixed{ die(); }, function() : void{}, false, "void is not covariant with mixed"];
 	}
 
 	public static function paramContravarianceProvider() : \Generator{
@@ -81,10 +81,11 @@ class PrototypeTest extends TestCase{
 	#[DataProvider('returnCovarianceProvider')]
 	#[DataProvider('paramContravarianceProvider')]
 	public function testCompatibility(\Closure $required, \Closure $given, bool $matches, string $reason) : void{
-		$required = Prototype::createFromCallable($required);
+		$required = Prototype::fromClosure($required);
+		$given = Prototype::fromClosure($given);
 
 		$serializedRequire = (string) $required;
-		$serializedGiven = (string) Prototype::createFromCallable($given);
+		$serializedGiven = (string) $given;
 		self::assertSame($required->isSatisfiedBy($given), $matches, $reason . " ($serializedRequire, $serializedGiven)");
 	}
 }

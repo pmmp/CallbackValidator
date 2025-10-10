@@ -12,8 +12,8 @@ class PrototypeTest extends TestCase{
 
 	public static function returnCovarianceProvider() : \Generator{
 		//DNF types - PHP 8.2+ only
-		yield [function() : (Interface1&Interface2)|string{}, function() : Interface1{}, false, "given type not covariant with any part of required union"];
-		yield [function() : (Interface1&Interface2)|string{}, function() : Interface1&Interface2{}, true, "given type covariant with at least 1 part of required union"];
+		yield [function() : (Interface1&Interface2)|string{ die(); }, function() : Interface1{ die(); }, false, "given type not covariant with any part of required union"];
+		yield [function() : (Interface1&Interface2)|string{ die(); }, function() : Interface1&Interface2{ die(); }, true, "given type covariant with at least 1 part of required union"];
 	}
 
 	public static function paramContravarianceProvider() : \Generator{
@@ -27,10 +27,11 @@ class PrototypeTest extends TestCase{
 	#[DataProvider('returnCovarianceProvider')]
 	#[DataProvider('paramContravarianceProvider')]
 	public function testCompatibility(\Closure $required, \Closure $given, bool $matches, string $reason) : void{
-		$required = Prototype::createFromCallable($required);
+		$required = Prototype::fromClosure($required);
+		$given = Prototype::fromClosure($given);
 
 		$serializedRequire = (string) $required;
-		$serializedGiven = (string) Prototype::createFromCallable($given);
+		$serializedGiven = (string) $given;
 		self::assertSame($required->isSatisfiedBy($given), $matches, $reason . " ($serializedRequire, $serializedGiven)");
 	}
 }

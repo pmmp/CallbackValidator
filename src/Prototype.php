@@ -46,7 +46,7 @@ final class Prototype{
 		return $type === null ? null : self::convertReflectionTypeInner($type);
 	}
 
-	public static function createFromCallable(\Closure $callable) : Prototype{
+	public static function fromClosure(\Closure $callable) : Prototype{
 		$reflection = new \ReflectionFunction($callable);
 
 		$returnType = new ReturnInfo(self::convertReflectionType($reflection->getReturnType()), $reflection->returnsReference());
@@ -77,20 +77,18 @@ final class Prototype{
 		}
 	}
 
-	public function isSatisfiedBy(\Closure $callable) : bool{
-		$other = self::createFromCallable($callable);
-
-		if(!$this->returnInfo->isSatisfiedBy($other->returnInfo)){
+	public function isSatisfiedBy(Prototype $callable) : bool{
+		if(!$this->returnInfo->isSatisfiedBy($callable->returnInfo)){
 			return false;
 		}
 
-		if($other->requiredParameterCount > $this->requiredParameterCount){
+		if($callable->requiredParameterCount > $this->requiredParameterCount){
 			return false;
 		}
 
 		$last = null;
 
-		foreach($other->parameters as $position => $parameter){
+		foreach($callable->parameters as $position => $parameter){
 			// Parameters that exist in the prototype must always be satisfied directly
 			if(isset($this->parameters[$position])){
 				if(!$this->parameters[$position]->isSatisfiedBy($parameter)){
