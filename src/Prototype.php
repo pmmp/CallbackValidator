@@ -77,6 +77,21 @@ final class Prototype{
 		}
 	}
 
+	/**
+	 * @return ParameterInfo[]
+	 */
+	public function getParameterInfo() : array{
+		return $this->parameters;
+	}
+
+	public function getRequiredParameterCount() : int{
+		return $this->requiredParameterCount;
+	}
+
+	public function getReturnInfo() : ReturnInfo{
+		return $this->returnInfo;
+	}
+
 	public function isSatisfiedBy(Prototype $callable) : bool{
 		if(!$this->returnInfo->isSatisfiedBy($callable->returnInfo)){
 			return false;
