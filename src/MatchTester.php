@@ -22,6 +22,7 @@ final class MatchTester
         BuiltInTypes::CALLABLE => true,
         BuiltInTypes::VOID     => true,
         BuiltInTypes::ITERABLE => true,
+        BuiltInTypes::OBJECT   => true,
     ];
 
     /**
@@ -106,6 +107,10 @@ final class MatchTester
             return $subTypeName === \Closure::class
                 || \method_exists($subTypeName, '__invoke')
                 || \is_subclass_of($subTypeName, \Closure::class);
+        }
+
+        if ($superTypeName === BuiltInTypes::OBJECT) {
+            return class_exists($subTypeName) || interface_exists($subTypeName);
         }
 
         // If the super type is built-in, check whether casting rules can succeed

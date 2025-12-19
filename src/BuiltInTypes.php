@@ -17,4 +17,5 @@ final class BuiltInTypes
     const VOID     = 'void';
     const CALLABLE = 'callable';
     const ITERABLE = 'iterable';
+    const OBJECT   = 'object';
 }
